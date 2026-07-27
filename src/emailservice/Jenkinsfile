@@ -4,5 +4,7 @@ pythonServicePipeline(
   serviceName: 'emailservice',
   servicePath: 'src/emailservice',
   gitUrl: 'https://github.com/linbingdouzhe/microservices-demo.git',
-  gitBranch: 'main'
+  gitBranch: 'main',
+  manifestPath: 'kubernetes-manifests/emailservice.yaml',
+  manifestRepoSshUrl: 'git@github.com:linbingdouzhe/microservices-demo.git'
 )
