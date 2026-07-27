@@ -1,0 +1,8 @@
+@Library('jenkins-shared-lib') _
+
+pythonServicePipeline(
+  serviceName: 'emailservice',
+  servicePath: 'src/emailservice',
+  gitUrl: 'https://github.com/linbingdouzhe/microservices-demo.git',
+  gitBranch: 'main'
+)
