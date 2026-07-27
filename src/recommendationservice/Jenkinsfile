@@ -4,5 +4,8 @@ pythonServicePipeline(
   serviceName: 'recommendationservice',
   servicePath: 'src/recommendationservice',
   gitUrl: 'https://github.com/linbingdouzhe/microservices-demo.git',
-  gitBranch: 'main'
+  gitBranch: 'main',
+  manifestPath: 'kubernetes-manifests/recommendationservice.yaml',
+  manifestRepoSshUrl: 'git@github.com:linbingdouzhe/microservices-demo.git',
+  deployRegistry: 'localhost:30500'
 )

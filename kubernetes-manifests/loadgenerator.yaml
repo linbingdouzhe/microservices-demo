@@ -37,37 +37,13 @@ spec:
         runAsGroup: 1000
         runAsNonRoot: true
         runAsUser: 1000
-      initContainers:
-      - command:
-        - /bin/sh
-        - -exc
-        - |
-          MAX_RETRIES=12
-          RETRY_INTERVAL=10
-          for i in $(seq 1 $MAX_RETRIES); do
-            echo "Attempt $i: Pinging frontend: ${FRONTEND_ADDR}..."
-            STATUSCODE=$(wget --server-response http://${FRONTEND_ADDR} 2>&1 | awk '/^  HTTP/{print $2}')
-            if [ $STATUSCODE -eq 200 ]; then
-                echo "Frontend is reachable."
-                exit 0
-            fi
-            echo "Error: Could not reach frontend - Status code: ${STATUSCODE}"
-            sleep $RETRY_INTERVAL
-          done
-          echo "Failed to reach frontend after $MAX_RETRIES attempts."
-          exit 1
-        name: frontend-check
-        securityContext:
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-              - ALL
-          privileged: false
-          readOnlyRootFilesystem: true
-        image: busybox:1.38.0@sha256:fd8d9aa63ba2f0982b5304e1ee8d3b90a210bc1ffb5314d980eb6962f1a9715d
-        env:
-        - name: FRONTEND_ADDR
-          value: "frontend:80"
+      # NOTE: upstream's frontend-check initContainer (pings http://frontend:80,
+      # hard-fails after 12 retries) is deliberately removed here -- this local
+      # cluster doesn't run the full 12-service demo, so it would leave the
+      # pod stuck in Init:CrashLoopBackOff forever. FRONTEND_ADDR below still
+      # points at a target that doesn't exist in this cluster, so Locust will
+      # keep failing its requests at runtime, but the pod itself stays
+      # Running -- enough to exercise the CI/CD mechanism standalone.
       containers:
       - name: main
         securityContext:
