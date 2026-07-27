@@ -6,5 +6,6 @@ pythonServicePipeline(
   gitUrl: 'https://github.com/linbingdouzhe/microservices-demo.git',
   gitBranch: 'main',
   manifestPath: 'kubernetes-manifests/emailservice.yaml',
-  manifestRepoSshUrl: 'git@github.com:linbingdouzhe/microservices-demo.git'
+  manifestRepoSshUrl: 'git@github.com:linbingdouzhe/microservices-demo.git',
+  deployRegistry: 'localhost:30500'
 )

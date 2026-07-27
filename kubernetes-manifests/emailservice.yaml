@@ -43,7 +43,7 @@ spec:
               - ALL
           privileged: false
           readOnlyRootFilesystem: true
-        image: registry.registry.svc.cluster.local:5000/emailservice:9
+        image: localhost:30500/emailservice:9
         ports:
         - containerPort: 8080
         env:
