@@ -1,0 +1,8 @@
+@Library('jenkins-shared-lib') _
+
+javaServicePipeline(
+  serviceName: 'adservice',
+  servicePath: 'src/adservice',
+  gitUrl: 'https://github.com/linbingdouzhe/microservices-demo.git',
+  gitBranch: 'main'
+)

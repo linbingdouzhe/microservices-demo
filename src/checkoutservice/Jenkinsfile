@@ -1,0 +1,8 @@
+@Library('jenkins-shared-lib') _
+
+goServicePipeline(
+  serviceName: 'checkoutservice',
+  servicePath: 'src/checkoutservice',
+  gitUrl: 'https://github.com/linbingdouzhe/microservices-demo.git',
+  gitBranch: 'main'
+)
