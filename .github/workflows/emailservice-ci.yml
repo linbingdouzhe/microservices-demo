@@ -1,0 +1,103 @@
+name: emailservice CI
+
+# 触发条件：只有 src/emailservice 目录改动才跑，对应 Jenkinsfile 里手动指定 servicePath 的效果
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/emailservice/**'
+  pull_request:
+    paths:
+      - 'src/emailservice/**'
+  workflow_dispatch:   # 允许在 Actions 页面手动点一下触发，方便学习调试
+
+env:
+  IMAGE_NAME: emailservice
+  SERVICE_PATH: src/emailservice
+
+jobs:
+  # 对应 Jenkinsfile 的 stage('Unit Test')
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.SERVICE_PATH }}
+    steps:
+      - name: Checkout                      # 对应 stage('Checkout')
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - name: Install dependencies
+        run: pip install --no-cache-dir -r requirements.txt pytest pytest-cov
+
+      - name: Run unit tests
+        run: |
+          pytest \
+            --junitxml=test-results.xml \
+            --cov=. \
+            --cov-report=xml:coverage.xml
+
+      - name: Upload test results               # GitHub Actions 里没有 Jenkins 那个内置的 junit{} 展示，
+        if: always()                             # 用上传 artifact 的方式保留报告，需要的话另外接第三方 Action 渲染
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            ${{ env.SERVICE_PATH }}/test-results.xml
+            ${{ env.SERVICE_PATH }}/coverage.xml
+
+  # 对应 Jenkinsfile 的 stage('Build & Push')（Kaniko 换成了官方的 docker/build-push-action）
+  build-and-push:
+    needs: test
+    if: github.event_name != 'pull_request'   # PR 只跑测试，合并到 main 才真正构建推送镜像
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write        # 允许推送到 GHCR (ghcr.io)，等价于 Jenkins 里配置的私有 registry 凭据
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}   # 内置 token，不需要自己建 secret
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ env.SERVICE_PATH }}
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ github.run_number }}
+            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
+
+  # 对应 Jenkinsfile 的 stage('Update Deploy Manifest')
+  update-manifest:
+    needs: build-and-push
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write         # 需要写权限才能把改动 commit 回本仓库
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Bump image tag in manifest
+        run: |
+          sed -i "s#^\( *image: \).*#\1ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ github.run_number }}#" \
+            kubernetes-manifests/emailservice.yaml
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add kubernetes-manifests/emailservice.yaml
+          git diff --cached --quiet && echo "no manifest change" || git commit -m "ci: bump ${{ env.IMAGE_NAME }} image to ${{ github.run_number }}"
+          git push
